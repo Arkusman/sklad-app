@@ -1,122 +1,295 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мой Склад</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            margin: 0;
-            padding: 16px;
-        }
-        h2 {
-            margin-top: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .user-info {
-            font-size: 14px;
-            color: var(--tg-theme-hint-color, #777777);
-            margin-bottom: 16px;
-        }
-        .item-card {
-            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .item-name {
-            font-weight: bold;
-        }
-        .item-count {
-            background: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 14px;
-        }
-        .loading, .error {
-            text-align: center;
-            padding: 20px;
-            font-size: 16px;
-        }
-        .error { color: #cc0000; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Складской учет</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg-color: #18222d;
+      --text-color: #ffffff;
+      --btn-color: #2481cc;
+      --card-bg: #212d3b;
+      --danger-color: #e53935;
+      --success-color: #43a047;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 15px;
+    }
+    .header {
+      margin-bottom: 20px;
+    }
+    .header h2 {
+      margin: 0 0 5px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-info {
+      font-size: 14px;
+      color: #8093a7;
+    }
+    .search-box {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #2f3e4e;
+      background-color: var(--card-bg);
+      color: white;
+      box-sizing: border-box;
+      margin-bottom: 15px;
+    }
+    .product-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 80px;
+    }
+    .product-card {
+      background-color: var(--card-bg);
+      padding: 12px 15px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .product-info .title {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+    .product-info .id {
+      font-size: 12px;
+      color: #8093a7;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-counter {
+      background-color: #2f3e4e;
+      color: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-counter:active {
+      background-color: var(--btn-color);
+    }
+    .count-badge {
+      min-width: 40px;
+      text-align: center;
+      font-weight: bold;
+      background-color: #2b394a;
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-size: 14px;
+    }
+    .add-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--bg-color);
+      padding: 15px;
+      box-shadow: 0 -5px 15px rgba(0,0,0,0.3);
+    }
+    .btn-main {
+      width: 100%;
+      background-color: var(--btn-color);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .loader {
+      text-align: center;
+      color: #8093a7;
+      margin-top: 50px;
+    }
+    /* Простая модалка для добавления */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.7);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10;
+    }
+    .modal-content {
+      background-color: var(--card-bg);
+      padding: 20px;
+      border-radius: 15px;
+      width: 100%;
+      max-width: 40px;
+      box-sizing: border-box;
+    }
+    .modal-content h3 { margin-top: 0; }
+    .modal-content input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #2f3e4e;
+      background: #18222d;
+      color: white;
+      box-sizing: border-box;
+    }
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .btn-cancel { background-color: #555; }
+  </style>
 </head>
 <body>
 
+  <div class="header">
     <h2>📦 Складской учет</h2>
-    <div id="userInfo" class="user-info">Загрузка данных пользователя...</div>
+    <div class="user-info" id="userInfo">Пользователь: Загрузка...</div>
+  </div>
 
-    <div id="main-content">
-        <div id="loader" class="loading">⏳ Загрузка списка вещей...</div>
-        <div id="sklad-list"></div>
+  <input type="text" class="search-box" id="searchInp" placeholder="Поиск товара..." oninput="filterProducts()">
+
+  <div id="loader" class="loader">Загрузка данных со склада...</div>
+  <div class="product-list" id="productList"></div>
+
+  <div class="add-panel">
+    <button class="btn-main" onclick="openModal()">+ Добавить новый товар</button>
+  </div>
+
+  <div class="modal" id="addModal">
+    <div class="modal-content">
+      <h3>Новый товар</h3>
+      <input type="text" id="pName" placeholder="Название товара">
+      <input type="number" id="pCount" placeholder="Количество" value="1">
+      <div class="modal-buttons">
+        <button class="btn-main btn-cancel" onclick="closeModal()">Отмена</button>
+        <button class="btn-main" onclick="submitNewProduct()">Сохранить</button>
+      </div>
     </div>
+  </div>
 
-    <script>
-        // Твоя точная рабочая ссылка на Google Скрипт
-        const MY_URL = "https://script.google.com/macros/s/AKfycbzW5N2xqXP-jSnn_0KLjFpdUV7w7Xpq_J7cTWlfvSIxjfCBnhroxyD464gRhfBzKr8e6w/exec";
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Раскрываем на весь экран
 
-        // Инициализация Telegram WebApp
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand(); // Расширяем на весь экран
+    // СЮДА ВСТАВЬ СВОЮ ССЫЛКУ /EXEC ИЗ GOOGLE APPS SCRIPT
+    const API_URL = "https://script.google.com/macros/s/AKfycbzW5N2xqXP-jSnn_0KLjFpdUV7w7Xpq_J7cTWlfvSIxjfCBnhroxyD464gRhfBzKr8e6w/exec";
 
-        // Показываем имя пользователя
-        const userInfoDiv = document.getElementById('userInfo');
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            const user = tg.initDataUnsafe.user;
-            userInfoDiv.textContent = `Пользователь: ${user.first_name} ${user.last_name || ''} (@${user.username || 'нет'})`;
-        } else {
-            userInfoDiv.textContent = "Открыто вне Telegram (режим предпросмотра)";
-        }
+    let productsData = [];
 
-        // Загрузка данных из Google Таблицы
-        async function loadSkladData() {
-            const loader = document.getElementById('loader');
-            const skladList = document.getElementById('sklad-list');
-            
-            try {
-                const response = await fetch(MY_URL);
-                if (!response.ok) throw new Error('Ошибка сети');
-                
-                const data = await response.json();
-                loader.style.display = 'none';
-                skladList.innerHTML = '';
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      const u = tg.initDataUnsafe.user;
+      document.getElementById('userInfo').innerText = `Пользователь: ${u.first_name} ${u.username ? '(@' + u.username + ')' : ''}`;
+    } else {
+      document.getElementById('userInfo').innerText = "Пользователь: Локальный тест";
+    }
 
-                if (data.length === 0) {
-                    skladList.innerHTML = '<div class="loading">Ничего не найдено в таблице</div>';
-                    return;
-                }
+    async function loadProducts() {
+      try {
+        document.getElementById('loader').style.display = 'block';
+        const res = await fetch(API_URL);
+        productsData = await res.json();
+        renderProducts(productsData);
+        document.getElementById('loader').style.display = 'none';
+      } catch (err) {
+        document.getElementById('loader').innerText = "Ошибка загрузки данных.";
+      }
+    }
 
-                data.forEach(item => {
-                    const card = document.createElement('div');
-                    card.className = 'item-card';
-                    card.innerHTML = `
-                        <div class="item-name">${item.name}</div>
-                        <div class="item-count">${item.count} шт.</div>
-                    `;
-                    skladList.appendChild(card);
-                });
+    function renderProducts(arr) {
+      const list = document.getElementById('productList');
+      list.innerHTML = '';
+      arr.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          <div class="product-info">
+            <div class="title">${p.name}</div>
+            <div class="id">ID: ${p.id}</div>
+          </div>
+          <div class="controls">
+            <button class="btn-counter" onclick="changeCount('${p.id}', -1)">-</button>
+            <div class="count-badge" id="badge-${p.id}">${p.count} шт.</div>
+            <button class="btn-counter" onclick="changeCount('${p.id}', 1)">+</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
 
-            } catch (error) {
-                console.error(error);
-                loader.style.display = 'none';
-                skladList.innerHTML = '<div class="error">❌ Не удалось загрузить данные. Проверьте права доступа скрипта!</div>';
-            }
-        }
+    function filterProducts() {
+      const q = document.getElementById('searchInp').value.toLowerCase();
+      const filtered = productsData.filter(p => p.name.toLowerCase().includes(q));
+      renderProducts(filtered);
+    }
 
-        // Запускаем загрузку
-        loadSkladData();
-    </script>
+    async function changeCount(id, delta) {
+      const p = productsData.find(prod => prod.id == id);
+      if (!p) return;
+      
+      const newCount = parseInt(p.count) + delta;
+      if (newCount < 0) return; // Не уходим в минус
+      
+      p.count = newCount;
+      document.getElementById(`badge-${id}`).innerText = `${newCount} шт.`;
+
+      // Отправляем изменения в Google таблицу
+      sendUpdate({ action: 'updateCount', id: id, count: newCount });
+    }
+
+    function openModal() { document.getElementById('addModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('addModal').style.display = 'none'; }
+
+    async function submitNewProduct() {
+      const name = document.getElementById('pName').value.trim();
+      const count = parseInt(document.getElementById('pCount').value);
+      if (!name) return;
+
+      closeModal();
+      document.getElementById('loader').style.display = 'block';
+
+      await sendUpdate({ action: 'addProduct', name: name, count: count });
+      
+      document.getElementById('pName').value = '';
+      loadProducts(); // Перезагружаем список
+    }
+
+    async function sendUpdate(payload) {
+      try {
+        // Используем в режиме отправки параметров формы через текстовый POST
+        await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+      } catch(e) {
+        console.error("Ошибка обновления:", e);
+      }
+    }
+
+    // Загрузка при старте
+    loadProducts();
+  </script>
 </body>
 </html>
